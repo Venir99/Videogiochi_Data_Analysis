@@ -7,10 +7,6 @@ output:
     css: videogiochi.css
     widescreen: yes
     incremental: yes
-  slidy_presentation:
-    incremental: yes
-  beamer_presentation:
-    incremental: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -27,11 +23,9 @@ library(DT)
 library(reshape2)
 
 
-vgsales_12_4_2019 <- read_csv("C:/Users/marco/OneDrive/Desktop/UNIVERSITA'/Secondo Anno/Fondamentidi Dati/Progetto/vgsales-12-4-2019.csv/vgsales-12-4-2019.csv")
-View(vgsales_12_4_2019)
+vgsales_12_4_2019 <- read_csv("./Data/vgsales-12-4-2019.csv")
 
 df = vgsales_12_4_2019
-df
 
 df$Total_Shipped[is.na(df$Total_Shipped)] = 0
 df$Global_Sales[is.na(df$Global_Sales)] = 0
@@ -44,7 +38,8 @@ df1 = df %>%
   add_column(Total_Sales = df$Global_Sales + df$Total_Shipped,
              .after = "User_Score")
 
-df1
+df1 = df1 %>%
+  select(Name, Genre, Publisher, Platform, Total_Sales, Year)
 ```
 
 ## Introduzione
@@ -110,16 +105,17 @@ ggplot(Platforms, aes(x=reorder(Platform,count), y=count, fill=count))+
 ## Vendite durante gli anni dei maggiori distributori di console
 ```{r raceBar, out.width="90%", fig.align='center'}
 
+#Prendo in considerazione solo i 3 produttori di console più grandi ed importanti
+
 Microsoft <- c("X360", "XB", "XOne", "XBL","MS")
-nintendo <- c("Wii", "WiiU", "N64", "GC", "NES", "GB", "DS","GBA", "3DS", "SNES", "NS", "DSiW", "VC") 
+Nintendo <- c("Wii", "WiiU", "N64", "GC", "NES", "GB", "DS","GBA", "3DS", "SNES", "NS", "DSiW", "VC") 
 Sony <- c("PS", "PS2", "PS3", "PS4", "PSN", "PSP", "PSV")
 
 dfPlat = df1 %>%
   add_column(Platform_ = ifelse(df1$Platform %in% Microsoft, "Microsoft",
-                                ifelse(df1$Platform %in% nintendo, "Nintendo", 
+                                ifelse(df1$Platform %in% Nintendo, "Nintendo", 
                                        ifelse(df1$Platform %in% Sony, "Sony",
-                                              ifelse(df1$Platform == "PC", "PC",
-                                                                   "others"))))) %>%
+                                                                   "others")))) %>%
   select(Name,Platform_,Year,Total_Sales,Genre)
 
 prov = dfPlat %>%
@@ -127,7 +123,8 @@ prov = dfPlat %>%
   group_by( Platform_,Year) %>%
   summarize(count = sum(Total_Sales), .groups = 'drop') 
 
-prov$count[[119]] = 1
+#Per evitare sovrapposizioni nell'animazione
+prov$count[[78]] = 1
 
 prov1 = prov %>%
   group_by(Platform_) %>%
@@ -156,12 +153,15 @@ p <- ggplot(Start, aes(rank,
         ) +
   transition_states(Year, transition_length = 4, state_length = 1) +
   ease_aes('linear')
+
 animate(p, duration = 15, fps = 10)
 ```
 
 ## Quali sono i publisher più importanti?
 Videogiochi sviluppati dai migliori Publisher:
 ```{r Publisher, out.width="90%", fig.align='center'}
+
+#Raggruppo i videogiochi per case di sviluppo
 
 Microsoft <- c("Microsoft", "Microsoft Game Studios", "Microsoft Studios")
 Konami <- c("Konami Digital Entertainment","Konami") 
@@ -179,7 +179,7 @@ dfPublisher = df1 %>%
 
 Top12Pub = c("Rockstar Games","Sega", "Konami","Microsoft", "Nintendo", "Sony Computer Entertainment", "Ubisoft", "Electronic Arts", "Activision", "Atari", "Capcom", "Square Enix")
 
-#Numero di giochi per ogni Publisher
+#Numero di giochi prodotti per ogni Publisher
 
 dfPub1 = dfPublisher %>%
   group_by(Name,CasaDISviluppo ) %>%
@@ -259,6 +259,9 @@ dfGeneri %>%
 ## Relazione fra generi e publisher
 
 ```{r HeatMap, out.width="90%", fig.align='center'}
+
+#Prendo in considerazione solo i Publisher e i Generi migliori
+
 Top10Pub = c("Sega", "Konami","Microsoft", "Nintendo", "Sony Computer Entertainment", "Ubisoft", "Electronic Arts", "Activision", "Atari", "Capcom", "Square Enix")
 
 Top10Gen = c("Sports", "Shooter", "Platform", "Action", "Adventure", "Racing", "Role-Playing", "Simulation", "Fighting", "Puzzle")
@@ -313,9 +316,11 @@ datatable(EA, caption = "Migliori giochi Electronic Arts", escape = FALSE)
 Percentuali di vendite dei migliori generi nel mondo:
 
 ``` {r hereGenre, out.width="90%", fig.align='center', echo=FALSE, results = 'hide'}
-# Sales Where per genere
 
-Where <- read_csv("C:/Users/marco/OneDrive/Desktop/UNIVERSITA'/Secondo Anno/Fondamentidi Dati/Progetto/vgsales.csv/vgsales.csv", show_col_types = FALSE)
+#dataset molto più completo per quanto riguarda le vendite nel mondo ma praticamente uguale al datset pricipale
+#ma con meno videogiochi
+
+Where <- read_csv("./Data/vgsales.csv", show_col_types = FALSE)
 
 
 WhereGenre = Where %>%
@@ -335,8 +340,8 @@ WhereGenre = Where %>%
 
 
 
-
-s <- melt(WhereGenre[,c('Genre','America','Europa', 'Giappone')], id = 'Genre') #funzione che divide il data frame in righe Action Na 1919 Action Eu 1919 ecc.
+#funzione che divide il data frame in righe Action Na 1919 Action Eu 1919 ecc.
+s <- melt(WhereGenre[,c('Genre','America','Europa', 'Giappone')], id = 'Genre') 
 
 
 
@@ -388,9 +393,9 @@ Correlazione tra le vendite e il punteggio voti assegnato dalla rivista speciali
 ``` {r Cor, include=FALSE}
 # Correlazione più venduti/ Voto critica
 
-#MEtacritics
+#Dataset con i voti di Metacritic
 
-Metacritics <- read_csv("C:/Users/marco/OneDrive/Desktop/UNIVERSITA'/Secondo Anno/Fondamentidi Dati/Progetto/games-data.csv/games-data.csv")
+Metacritics <- read_csv("./Data/games-data.csv")
 
 Metacritics1 = Metacritics %>%
   select(name, score) %>%
